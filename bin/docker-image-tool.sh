@@ -47,7 +47,9 @@ function image_ref {
   local image="$1"
   local add_repo="${2:-1}"
   if [ $add_repo = 1 ] && [ -n "$REPO" ]; then
-    image="$REPO/$image"
+    #LWModification: adjusting to our docker lacework repo
+    #image="$REPO/$image"
+    image="$REPO"
   fi
   if [ -n "$TAG" ]; then
     image="$image:$TAG"
@@ -97,15 +99,15 @@ function create_dev_build_context {(
   cp -r "resource-managers/kubernetes/integration-tests/tests" \
     "$BASE_CTX/kubernetes/tests"
 
-  mkdir "$BASE_CTX/examples"
-  cp -r "examples/src" "$BASE_CTX/examples/src"
-  # Copy just needed examples jars instead of everything.
-  mkdir "$BASE_CTX/examples/jars"
-  for i in examples/target/scala-$SPARK_SCALA_VERSION/jars/*; do
-    if [ ! -f "$BASE_CTX/jars/$(basename $i)" ]; then
-      cp $i "$BASE_CTX/examples/jars"
-    fi
-  done
+#  mkdir "$BASE_CTX/examples"
+#  cp -r "examples/src" "$BASE_CTX/examples/src"
+#  # Copy just needed examples jars instead of everything.
+#  mkdir "$BASE_CTX/examples/jars"
+#  for i in examples/target/scala-$SPARK_SCALA_VERSION/jars/*; do
+#    if [ ! -f "$BASE_CTX/jars/$(basename $i)" ]; then
+#      cp $i "$BASE_CTX/examples/jars"
+#    fi
+#  done
 
   for other in bin sbin data; do
     cp -r "$other" "$BASE_CTX/$other"
@@ -269,11 +271,11 @@ Examples:
     $0 -r docker.io/myrepo -t v2.3.0 push
 
   - Build and push Java11-based image with tag "v3.0.0" to docker.io/myrepo
-    $0 -r docker.io/myrepo -t v3.0.0 -b java_image_tag=11-jre-slim build
+    $0 -r docker.io/myrepo -t v3.0.0 -b java_image_tag=11-jre-focal build
     $0 -r docker.io/myrepo -t v3.0.0 push
 
   - Build and push Java11-based image for multiple archs to docker.io/myrepo
-    $0 -r docker.io/myrepo -t v3.0.0 -X -b java_image_tag=11-jre-slim build
+    $0 -r docker.io/myrepo -t v3.0.0 -X -b java_image_tag=11-jre-focal build
     # Note: buildx, which does cross building, needs to do the push during build
     # So there is no separate push step with -X
 

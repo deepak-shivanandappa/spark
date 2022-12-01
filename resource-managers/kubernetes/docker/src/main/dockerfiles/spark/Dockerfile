@@ -14,9 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-ARG java_image_tag=11-jre-slim
 
-FROM openjdk:${java_image_tag}
+## Lacework modification
+#ARG java_image_tag=11-jre-slim
+#FROM openjdk:${java_image_tag}
+
+ARG java_image_tag=11-jre-focal
+FROM eclipse-temurin:${java_image_tag}
 
 ARG spark_uid=185
 
@@ -28,12 +32,18 @@ ARG spark_uid=185
 # docker build -t spark:latest -f kubernetes/dockerfiles/spark/Dockerfile .
 
 RUN set -ex && \
-    sed -i 's/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g' /etc/apt/sources.list && \
+## Lacework modification \
+# Eclipse-temurin is based off ubuntu, whereas openjdk is based off debian, and  \
+# there no need to replace http with https, hence this line of code is not needed in ubuntu.
+#   sed -i 's/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g' /etc/apt/sources.list && \
     apt-get update && \
     ln -s /lib /lib64 && \
     apt install -y bash tini libc6 libpam-modules krb5-user libnss3 procps && \
     mkdir -p /opt/spark && \
-    mkdir -p /opt/spark/examples && \
+## Lacework modification \
+# Skip the example to keep the image lighter and added an empty directory for lacework\
+#   mkdir -p /opt/spark/examples && \
+    mkdir -p /opt/spark/lacework && \
     mkdir -p /opt/spark/work-dir && \
     touch /opt/spark/RELEASE && \
     rm /bin/sh && \
@@ -47,7 +57,8 @@ COPY bin /opt/spark/bin
 COPY sbin /opt/spark/sbin
 COPY kubernetes/dockerfiles/spark/entrypoint.sh /opt/
 COPY kubernetes/dockerfiles/spark/decom.sh /opt/
-COPY examples /opt/spark/examples
+## Lacework modification : skip the examples to keep image lighter.
+#COPY examples /opt/spark/examples
 COPY kubernetes/tests /opt/spark/tests
 COPY data /opt/spark/data
 

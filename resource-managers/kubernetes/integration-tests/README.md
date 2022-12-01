@@ -15,7 +15,7 @@ directory:
 
 To run tests with Java 11 instead of Java 8, use `--java-image-tag` to specify the base image.
 
-    ./dev/dev-run-integration-tests.sh --java-image-tag 11-jre-slim
+    ./dev/dev-run-integration-tests.sh --java-image-tag 11-jre-focal
 
 To run tests with a custom docker image, use `--docker-file` to specify the Dockerfile.
 Note that if both `--docker-file` and `--java-image-tag` are used, `--docker-file` is preferred,

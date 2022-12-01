@@ -9,12 +9,16 @@ Note:
 - Lacework is using `focal` image tag - these are the suite code names for releases of `Ubuntu` and indicate which release the image is based on. Also, generally lacework service/batch all running on `Ubuntu`. For more reference - https://hub.docker.com/_/eclipse-temurin
 - OpenJDK is built on top of Debian, Dockerfile was modify http to https of its sources list file[https://wiki.debian.org/SourcesList#Example_sources.list], where Eclipse temurin is built on top of Ubuntu - https://manpages.ubuntu.com/manpages/xenial/man5/sources.list.5.html 
 
-## Build instructions
+# Build instructions
 Apache spark is built using Maven and following are the steps.
+
+## Maven settings
 ```bash
 export MAVEN_OPTS="-Xss64m -Xmx2g -XX:ReservedCodeCacheSize=1g"
+```
 
 ## Build source code
+```bash
 ./build/mvn -DskipTests clean package
 ```
 

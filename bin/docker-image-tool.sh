@@ -43,13 +43,21 @@ function cleanup_ctx_dir {
 
 trap cleanup_ctx_dir EXIT
 
+function image_name {
+  local image_name=$1
+  if [ -n "$IMAGE" ]; then
+    image_name="$IMAGE"
+  else
+    image_name=$1
+  fi
+  echo "$image_name"
+}
+
 function image_ref {
-  local image="$1"
+  local image=$(image_name $1)
   local add_repo="${2:-1}"
   if [ $add_repo = 1 ] && [ -n "$REPO" ]; then
-    #LWModification: adjusting to our docker lacework repo
-    #image="$REPO/$image"
-    image="$REPO"
+    image="$REPO/$image"
   fi
   if [ -n "$TAG" ]; then
     image="$image:$TAG"
@@ -99,15 +107,15 @@ function create_dev_build_context {(
   cp -r "resource-managers/kubernetes/integration-tests/tests" \
     "$BASE_CTX/kubernetes/tests"
 
-#  mkdir "$BASE_CTX/examples"
-#  cp -r "examples/src" "$BASE_CTX/examples/src"
-#  # Copy just needed examples jars instead of everything.
-#  mkdir "$BASE_CTX/examples/jars"
-#  for i in examples/target/scala-$SPARK_SCALA_VERSION/jars/*; do
-#    if [ ! -f "$BASE_CTX/jars/$(basename $i)" ]; then
-#      cp $i "$BASE_CTX/examples/jars"
-#    fi
-#  done
+  mkdir "$BASE_CTX/examples"
+  cp -r "examples/src" "$BASE_CTX/examples/src"
+  # Copy just needed examples jars instead of everything.
+  mkdir "$BASE_CTX/examples/jars"
+  for i in examples/target/scala-$SPARK_SCALA_VERSION/jars/*; do
+    if [ ! -f "$BASE_CTX/jars/$(basename $i)" ]; then
+      cp $i "$BASE_CTX/examples/jars"
+    fi
+  done
 
   for other in bin sbin data; do
     cp -r "$other" "$BASE_CTX/$other"
@@ -241,6 +249,7 @@ Options:
   -R file               (Optional) Dockerfile to build for SparkR Jobs. Builds R dependencies and ships with Spark.
                         Skips building SparkR docker image if not specified.
   -r repo               Repository address.
+  -i image              Image name.
   -t tag                Tag to apply to the built image, or to identify the image to be pushed.
   -m                    Use minikube's Docker daemon.
   -n                    Build docker image with --no-cache
@@ -292,6 +301,7 @@ if [[ "$@" = *--help ]] || [[ "$@" = *-h ]]; then
 fi
 
 REPO=
+IMAGE=
 TAG=
 BASEDOCKERFILE=
 PYDOCKERFILE=
@@ -300,7 +310,7 @@ NOCACHEARG=
 BUILD_PARAMS=
 SPARK_UID=
 CROSS_BUILD="false"
-while getopts f:p:R:mr:t:Xnb:u: option
+while getopts f:i:p:R:mr:t:Xnb:u: option
 do
  case "${option}"
  in
@@ -308,6 +318,7 @@ do
  p) PYDOCKERFILE=$(resolve_file ${OPTARG});;
  R) RDOCKERFILE=$(resolve_file ${OPTARG});;
  r) REPO=${OPTARG};;
+ i) IMAGE=${OPTARG};;
  t) TAG=${OPTARG};;
  n) NOCACHEARG="--no-cache";;
  b) BUILD_PARAMS=${BUILD_PARAMS}" --build-arg "${OPTARG};;

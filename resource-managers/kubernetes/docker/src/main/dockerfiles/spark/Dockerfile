@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-ARG java_image_tag=17-jre
-
-FROM eclipse-temurin:${java_image_tag}
+# We need to build from debian:bullseye-slim because openjdk switches its underlying OS
+# from debian to oraclelinux from openjdk:12
+FROM debian:bullseye-slim
 
 ARG spark_uid=185
 
@@ -30,9 +30,8 @@ ARG spark_uid=185
 RUN set -ex && \
     apt-get update && \
     ln -s /lib /lib64 && \
-    apt install -y bash tini libc6 libpam-modules krb5-user libnss3 procps && \
+    apt install -y bash tini libc6 libpam-modules krb5-user libnss3 procps openjdk-17-jre && \
     mkdir -p /opt/spark && \
-    mkdir -p /opt/spark/examples && \
     mkdir -p /opt/spark/work-dir && \
     touch /opt/spark/RELEASE && \
     rm /bin/sh && \

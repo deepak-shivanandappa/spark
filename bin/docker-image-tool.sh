@@ -43,8 +43,18 @@ function cleanup_ctx_dir {
 
 trap cleanup_ctx_dir EXIT
 
+function image_name {
+  local image_name=$1
+  if [ -n "$IMAGE" ]; then
+    image_name="$IMAGE"
+  else
+    image_name=$1
+  fi
+  echo "$image_name"
+}
+
 function image_ref {
-  local image="$1"
+  local image=$(image_name $1)
   local add_repo="${2:-1}"
   if [ $add_repo = 1 ] && [ -n "$REPO" ]; then
     image="$REPO/$image"
@@ -239,6 +249,7 @@ Options:
   -R file               (Optional) Dockerfile to build for SparkR Jobs. Builds R dependencies and ships with Spark.
                         Skips building SparkR docker image if not specified.
   -r repo               Repository address.
+  -i image              Image name.
   -t tag                Tag to apply to the built image, or to identify the image to be pushed.
   -m                    Use minikube's Docker daemon.
   -n                    Build docker image with --no-cache
@@ -269,11 +280,11 @@ Examples:
     $0 -r docker.io/myrepo -t v2.3.0 push
 
   - Build and push Java11-based image with tag "v3.0.0" to docker.io/myrepo
-    $0 -r docker.io/myrepo -t v3.0.0 -b java_image_tag=11-jre-slim build
+    $0 -r docker.io/myrepo -t v3.0.0 -b java_image_tag=11-jre-focal build
     $0 -r docker.io/myrepo -t v3.0.0 push
 
   - Build and push Java11-based image for multiple archs to docker.io/myrepo
-    $0 -r docker.io/myrepo -t v3.0.0 -X -b java_image_tag=11-jre-slim build
+    $0 -r docker.io/myrepo -t v3.0.0 -X -b java_image_tag=11-jre-focal build
     # Note: buildx, which does cross building, needs to do the push during build
     # So there is no separate push step with -X
 
@@ -290,6 +301,7 @@ if [[ "$@" = *--help ]] || [[ "$@" = *-h ]]; then
 fi
 
 REPO=
+IMAGE=
 TAG=
 BASEDOCKERFILE=
 PYDOCKERFILE=
@@ -298,7 +310,7 @@ NOCACHEARG=
 BUILD_PARAMS=
 SPARK_UID=
 CROSS_BUILD="false"
-while getopts f:p:R:mr:t:Xnb:u: option
+while getopts f:i:p:R:mr:t:Xnb:u: option
 do
  case "${option}"
  in
@@ -306,6 +318,7 @@ do
  p) PYDOCKERFILE=$(resolve_file ${OPTARG});;
  R) RDOCKERFILE=$(resolve_file ${OPTARG});;
  r) REPO=${OPTARG};;
+ i) IMAGE=${OPTARG};;
  t) TAG=${OPTARG};;
  n) NOCACHEARG="--no-cache";;
  b) BUILD_PARAMS=${BUILD_PARAMS}" --build-arg "${OPTARG};;

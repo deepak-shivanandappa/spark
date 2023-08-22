@@ -35,6 +35,8 @@ DISTDIR="$SPARK_HOME/dist"
 MAKE_TGZ=false
 MAKE_PIP=false
 MAKE_R=false
+SKIP_BUILD_COMMAND=false
+SKIP_EXAMPLE_FILES=false
 NAME=none
 MVN="$SPARK_HOME/build/mvn"
 
@@ -43,7 +45,7 @@ function exit_with_usage {
   echo "make-distribution.sh - tool for making binary distributions of Spark"
   echo ""
   echo "usage:"
-  cl_options="[--name] [--tgz] [--pip] [--r] [--mvn <mvn-command>]"
+  cl_options="[--name] [--tgz] [--pip] [--r] [--skipbuild] [--skipexamples] [--mvn <mvn-command>]"
   echo "make-distribution.sh $cl_options <maven build options>"
   echo "See Spark's \"Building Spark\" doc for correct Maven options."
   echo ""
@@ -61,6 +63,12 @@ while (( "$#" )); do
       ;;
     --r)
       MAKE_R=true
+      ;;
+    --skipbuild)
+      SKIP_BUILD_COMMAND=true
+      ;;
+    --skipexamples)
+      SKIP_EXAMPLES=true
       ;;
     --mvn)
       MVN="$2"
@@ -172,7 +180,12 @@ BUILD_COMMAND=("$MVN" clean package -DskipTests $@)
 echo -e "\nBuilding with..."
 echo -e "\$ ${BUILD_COMMAND[@]}\n"
 
-"${BUILD_COMMAND[@]}"
+if [ "$SKIP_BUILD_COMMAND" != "true" ]; then
+  "${BUILD_COMMAND[@]}"
+else
+  echo "Skipping build source code"
+fi
+
 
 # Make directories
 rm -rf "$DISTDIR"
@@ -197,20 +210,24 @@ if [ -d "$SPARK_HOME"/resource-managers/kubernetes/core/target/ ]; then
 fi
 
 # Copy examples and dependencies
-mkdir -p "$DISTDIR/examples/jars"
-cp "$SPARK_HOME"/examples/target/scala*/jars/* "$DISTDIR/examples/jars"
+if [ "$SKIP_EXAMPLE_FILES" == "false" ]; then
+  mkdir -p "$DISTDIR/examples/jars"
+  cp "$SPARK_HOME"/examples/target/scala*/jars/* "$DISTDIR/examples/jars"
 
-# Deduplicate jars that have already been packaged as part of the main Spark dependencies.
-for f in "$DISTDIR"/examples/jars/*; do
-  name=$(basename "$f")
-  if [ -f "$DISTDIR/jars/$name" ]; then
-    rm "$DISTDIR/examples/jars/$name"
-  fi
-done
+  # Deduplicate jars that have already been packaged as part of the main Spark dependencies.
+  for f in "$DISTDIR"/examples/jars/*; do
+    name=$(basename "$f")
+    if [ -f "$DISTDIR/jars/$name" ]; then
+      rm "$DISTDIR/examples/jars/$name"
+    fi
+  done
 
-# Copy example sources (needed for python and SQL)
-mkdir -p "$DISTDIR/examples/src/main"
-cp -r "$SPARK_HOME/examples/src/main" "$DISTDIR/examples/src/"
+  # Copy example sources (needed for python and SQL)
+  mkdir -p "$DISTDIR/examples/src/main"
+  cp -r "$SPARK_HOME/examples/src/main" "$DISTDIR/examples/src/"
+else
+  echo "Skipping examples files"
+fi
 
 # Copy license and ASF files
 if [ -e "$SPARK_HOME/LICENSE-binary" ]; then
@@ -226,7 +243,11 @@ if [ -e "$SPARK_HOME/CHANGES.txt" ]; then
 fi
 
 # Copy data files
-cp -r "$SPARK_HOME/data" "$DISTDIR"
+if [ "$SKIP_EXAMPLE_FILES" == "false" ]; then
+  cp -r "$SPARK_HOME/data" "$DISTDIR"
+else
+  echo "Skipping data files"
+fi
 
 # Make pip package
 if [ "$MAKE_PIP" == "true" ]; then
@@ -280,6 +301,8 @@ if [ -d "$SPARK_HOME/R/lib/SparkR" ]; then
   mkdir -p "$DISTDIR/R/lib"
   cp -r "$SPARK_HOME/R/lib/SparkR" "$DISTDIR/R/lib"
   cp "$SPARK_HOME/R/lib/sparkr.zip" "$DISTDIR/R/lib"
+else
+  echo "Skipping building R package"
 fi
 
 if [ "$MAKE_TGZ" == "true" ]; then
@@ -289,4 +312,6 @@ if [ "$MAKE_TGZ" == "true" ]; then
   cp -r "$DISTDIR" "$TARDIR"
   tar czf "spark-$VERSION-bin-$NAME.tgz" -C "$SPARK_HOME" "$TARDIR_NAME"
   rm -rf "$TARDIR"
+else
+  echo "Skipping building tar package"
 fi
